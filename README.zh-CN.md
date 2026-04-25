@@ -158,6 +158,12 @@ git clone https://github.com/non-convex/ashare-stock-timing.git C:/path/to/agent
 git clone https://github.com/non-convex/ashare-stock-timing.git <agent-skills-dir>/ashare-stock-timing
 ```
 
+也可以直接让具备 shell/Git 访问能力的 AI Agent 代为安装：
+
+```text
+请将 https://github.com/non-convex/ashare-stock-timing 安装为 AI Agent skill 或本地工具包，放到你配置的 skills/tools 目录中，目录名使用 ashare-stock-timing。安装后请加载 SKILL.md 作为触发规则，使用 scripts/ 做本地计算，并且仅在回答 A 股技术面、趋势或买卖点问题时读取 references/。不要把它用于基本面分析或估值分析。
+```
+
 之后 Agent 可以加载 `SKILL.md`，调用 `scripts/` 下的脚本，并按需读取 `references/` 下的方法论文件，用于回答 A 股技术面、趋势或买卖点问题。
 
 ## 典型使用方式

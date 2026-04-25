@@ -158,6 +158,12 @@ On Windows:
 git clone https://github.com/non-convex/ashare-stock-timing.git C:/path/to/agent-skills/ashare-stock-timing
 ```
 
+Alternatively, ask an AI agent with shell/Git access to install it for you:
+
+```text
+Install https://github.com/non-convex/ashare-stock-timing as an AI-agent skill or local tool package. Put it in your configured skills/tools directory under the folder name ashare-stock-timing. After installation, load SKILL.md for trigger rules, use scripts/ for local calculations, and read references/ only when answering A-share technical, trend, or buy/sell timing questions. Do not use it for fundamental analysis or valuation.
+```
+
 Agents can then load `SKILL.md`, call the scripts in `scripts/`, and selectively read the methodology files in `references/` when users ask about A-share technical trends or buy/sell timing.
 
 ## Example Agent Flow
