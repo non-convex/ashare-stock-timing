@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Local data outputs
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.sqlite
+*.db
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+

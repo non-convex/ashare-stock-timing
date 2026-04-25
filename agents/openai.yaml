@@ -1,0 +1,4 @@
+interface:
+  display_name: "A股个股买卖点"
+  short_description: "A-share technical timing; excludes valuation"
+  default_prompt: "Use $ashare-stock-timing for an A-share technical trend, buy/sell point, fund-flow proxy, chip, and risk-plan analysis."
