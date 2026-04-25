@@ -59,8 +59,9 @@ python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 -
 
 Notes:
 
-- `--source auto` tries Eastmoney first and falls back to Yahoo Chart.
-- Eastmoney data usually includes amount and turnover.
+- `--source auto` tries Eastmoney first, then Tencent, then Yahoo Chart.
+- Eastmoney data usually includes exact amount and turnover.
+- Tencent fallback fills price/volume, estimates historical amount from unadjusted typical price × volume, and estimates turnover from latest float shares when available.
 - Yahoo fallback may leave `amount` and `turnover` blank; lower confidence for amount/turnover-based conclusions in that case.
 
 ### 2. Technical Score Snapshot

@@ -59,8 +59,9 @@ python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 -
 
 说明：
 
-- 默认 `--source auto`：先尝试 Eastmoney，失败后回退 Yahoo Chart。
-- Eastmoney 数据通常包含成交额和换手率。
+- 默认 `--source auto`：先尝试 Eastmoney，再尝试 Tencent，最后回退 Yahoo Chart。
+- Eastmoney 数据通常包含较完整的成交额和换手率。
+- Tencent fallback 会补齐价格/成交量，并用未复权典型价 × 成交量估算历史成交额；如能取得最新流通股本，则估算换手率。
 - Yahoo fallback 可能缺少 `amount` 和 `turnover`，此时成交额/换手率相关结论应降低置信度。
 
 ### 2. 技术指标评分

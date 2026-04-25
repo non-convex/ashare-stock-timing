@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Fetch A-share daily K-line data from Eastmoney's public quote endpoint.
+Fetch A-share daily K-line data from free public quote endpoints.
 
 This script is for structured OHLCV data acquisition inside the
 ashare-stock-timing skill. Use web search or official sources for current
@@ -124,8 +124,150 @@ def yahoo_symbol(symbol: str) -> str:
     return f"{code}{suffix}"
 
 
+def tencent_symbol(symbol: str) -> str:
+    code = symbol.strip().split(".")[-1]
+    if not code.isdigit() or len(code) != 6:
+        raise SystemExit("Tencent fallback needs a 6-digit A-share code.")
+    if code.startswith(("5", "6", "9")):
+        prefix = "sh"
+    elif code.startswith(("4", "8")):
+        prefix = "bj"
+    else:
+        prefix = "sz"
+    return f"{prefix}{code}"
+
+
 def parse_yyyymmdd(value: str) -> datetime:
     return datetime.strptime(value, "%Y%m%d").replace(tzinfo=timezone.utc)
+
+
+def yyyymmdd_to_dash(value: str) -> str:
+    return datetime.strptime(value, "%Y%m%d").strftime("%Y-%m-%d")
+
+
+def urlopen_text(url: str, encoding: str = "utf-8", referer: str = "https://quote.eastmoney.com/") -> str:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Connection": "close",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
+            "Referer": referer,
+        },
+    )
+    with urllib.request.urlopen(request, timeout=20) as response:
+        return response.read().decode(encoding, errors="replace")
+
+
+def fetch_tencent_float_shares(ticker: str) -> float | None:
+    url = f"https://qt.gtimg.cn/q={urllib.parse.quote(ticker)}"
+    try:
+        payload = urlopen_text(url, encoding="gbk", referer="https://gu.qq.com/")
+    except (urllib.error.URLError, TimeoutError, http.client.RemoteDisconnected):
+        return None
+    if '="' not in payload:
+        return None
+    parts = payload.split('="', 1)[1].strip().rstrip('";').split("~")
+    for index in [73, 72, 76]:
+        if index < len(parts):
+            try:
+                shares = float(parts[index])
+            except ValueError:
+                continue
+            if shares > 0:
+                return shares
+    return None
+
+
+def fetch_tencent_kline(symbol: str, start: str, end: str, adjust: str) -> dict:
+    ticker = tencent_symbol(symbol)
+    start_dash = yyyymmdd_to_dash(start)
+    end_dash = yyyymmdd_to_dash(end)
+    calendar_days = (datetime.strptime(end, "%Y%m%d") - datetime.strptime(start, "%Y%m%d")).days + 1
+    count = max(800, min(3000, int(calendar_days * 1.8)))
+    adjust_key = {"none": "day", "qfq": "qfqday", "hfq": "hfqday"}[adjust]
+
+    if adjust == "none":
+        url = (
+            "https://web.ifzq.gtimg.cn/appstock/app/kline/kline?"
+            f"param={ticker},day,{start_dash},{end_dash},{count}"
+        )
+    else:
+        url = (
+            "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?"
+            f"param={ticker},day,{start_dash},{end_dash},{count},{adjust}"
+        )
+    raw_url = (
+        "https://web.ifzq.gtimg.cn/appstock/app/kline/kline?"
+        f"param={ticker},day,{start_dash},{end_dash},{count}"
+    )
+    try:
+        parsed = json.loads(urlopen_text(url, referer="https://gu.qq.com/"))
+        raw_parsed = json.loads(urlopen_text(raw_url, referer="https://gu.qq.com/"))
+    except (urllib.error.URLError, TimeoutError, http.client.RemoteDisconnected, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Failed to fetch Tencent K-line data: {exc}") from exc
+
+    data = parsed.get("data", {}).get(ticker)
+    raw_data = raw_parsed.get("data", {}).get(ticker)
+    if not data or adjust_key not in data:
+        raise RuntimeError(f"No Tencent K-line data returned for {ticker}.")
+    raw_rows = {row[0]: row for row in (raw_data or {}).get("day", [])}
+    float_shares = fetch_tencent_float_shares(ticker)
+
+    klines: list[str] = []
+    previous_close: float | None = None
+    for row in data[adjust_key]:
+        if len(row) < 6:
+            continue
+        row_date = row[0]
+        open_, close, high, low = [float(value) for value in row[1:5]]
+        volume_hands = float(row[5])
+        volume_shares = volume_hands * 100
+        raw_row = raw_rows.get(row_date)
+        amount = ""
+        if raw_row and len(raw_row) >= 6:
+            raw_open, raw_close, raw_high, raw_low = [float(value) for value in raw_row[1:5]]
+            typical_price = (raw_open + raw_close + raw_high + raw_low) / 4
+            amount = f"{typical_price * volume_shares:.2f}"
+        turnover = ""
+        if float_shares:
+            turnover = f"{volume_shares / float_shares * 100:.4f}"
+        amplitude = ((high - low) / previous_close * 100) if previous_close else 0.0
+        change = (close - previous_close) if previous_close else 0.0
+        pct_change = (change / previous_close * 100) if previous_close else 0.0
+        klines.append(
+            ",".join(
+                [
+                    row_date,
+                    f"{open_:.4f}",
+                    f"{close:.4f}",
+                    f"{high:.4f}",
+                    f"{low:.4f}",
+                    f"{volume_shares:.0f}",
+                    amount,
+                    f"{amplitude:.4f}",
+                    f"{pct_change:.4f}",
+                    f"{change:.4f}",
+                    turnover,
+                ]
+            )
+        )
+        previous_close = close
+    if not klines:
+        raise RuntimeError("Tencent payload contained no parseable K-line rows.")
+    return {
+        "name": ticker,
+        "code": symbol,
+        "market": "tencent",
+        "klines": klines,
+        "notes": [
+            "Tencent K-line volume is converted from hands to shares.",
+            "Historical amount is estimated from unadjusted typical price * volume because Tencent K-line does not expose exact historical amount.",
+            "Turnover is estimated using latest float shares from Tencent quote when available.",
+        ],
+    }
 
 
 def fetch_yahoo_kline(symbol: str, start: str, end: str, adjust: str) -> dict:
@@ -243,7 +385,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--start", default="20180101", help="Start date YYYYMMDD.")
     parser.add_argument("--end", default=date.today().strftime("%Y%m%d"), help="End date YYYYMMDD.")
     parser.add_argument("--adjust", default="qfq", choices=["none", "qfq", "hfq"], help="Price adjustment mode.")
-    parser.add_argument("--source", default="auto", choices=["auto", "eastmoney", "yahoo"], help="Data source.")
+    parser.add_argument("--source", default="auto", choices=["auto", "eastmoney", "tencent", "yahoo"], help="Data source.")
     parser.add_argument("--output", type=Path, help="Output CSV path. Defaults to <symbol>_daily.csv.")
     parser.add_argument("--json", action="store_true", help="Print metadata JSON after writing CSV.")
     args = parser.parse_args(argv)
@@ -258,6 +400,13 @@ def main(argv: Iterable[str] | None = None) -> int:
         except RuntimeError as exc:
             errors.append(str(exc))
             if args.source == "eastmoney":
+                raise SystemExit(str(exc))
+    if data is None and args.source in {"auto", "tencent"}:
+        try:
+            data = fetch_tencent_kline(args.symbol, args.start, args.end, args.adjust)
+        except RuntimeError as exc:
+            errors.append(str(exc))
+            if args.source == "tencent":
                 raise SystemExit(str(exc))
     if data is None and args.source in {"auto", "yahoo"}:
         try:
@@ -277,6 +426,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         "code": data.get("code"),
         "market": data.get("market"),
         "source": args.source if args.source != "auto" else data.get("market", "eastmoney"),
+        "notes": data.get("notes", []),
         "adjust": args.adjust,
         "start": args.start,
         "end": args.end,
