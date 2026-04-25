@@ -1,10 +1,10 @@
 # Main-Force Information Methods
 
-Use this reference when the user asks about 主力资金、主力净流入、大单、超大单、控盘、吸筹、派发, or when the agent needs a local main-force reference signal.
+Use this reference when the user asks about main-force funds, main-force net inflow, large orders, huge orders, control proxies, accumulation, distribution, or when the agent needs a local main-force reference signal.
 
 ## 1. What "Main Force" Usually Means
 
-"主力资金" is not an official exchange identity. Vendors usually estimate it from transaction/order data:
+"Main-force funds" is not an official exchange identity. Vendors usually estimate it from transaction/order data:
 
 - classify trades/orders by amount or shares into small/mid/big/huge buckets;
 - infer active buy/sell direction from trade side, bid/ask, or tick rule;
@@ -28,7 +28,7 @@ Then:
 
 `main_force_net = big_buy + huge_buy - big_sell - huge_sell`
 
-Some products use share-count thresholds, dynamic thresholds by liquidity/market cap, or Level-2 order reconstruction. Do not mix values from different vendors without noting口径差异.
+Some products use share-count thresholds, dynamic thresholds by liquidity/market cap, or Level-2 order reconstruction. Do not mix values from different vendors without noting methodology differences.
 
 ## 3. Required Data Quality
 
@@ -38,7 +38,7 @@ Some products use share-count thresholds, dynamic thresholds by liquidity/market
 | Tick trades with bid/ask or side | Good | can classify active buy/sell |
 | Tick trades with only price | Medium | tick-rule side inference is noisy |
 | Daily OHLCV only | No | can only compute volume-price proxy |
-| Vendor "主力净流入" field | Depends | cite vendor; formula may be opaque |
+| Vendor "main-force net inflow" field | Depends | cite vendor; formula may be opaque |
 
 ## 4. Local Script
 
@@ -88,7 +88,7 @@ If tick volume is in hands, pass `--volume-multiplier 100`.
 | main net / total amount < -8% and active net ratio < -15% | meaningful large-order net outflow |
 | high neutral/unclassified ratio | side inference weak; lower confidence |
 | huge buy but price fails | possible absorption or distribution; confirm with price |
-| huge sell but price holds | possible strong承接; confirm with support and sector |
+| huge sell but price holds | possible strong absorption; confirm with support and sector |
 
 ### Local DDX/DDY/DDZ Proxies
 

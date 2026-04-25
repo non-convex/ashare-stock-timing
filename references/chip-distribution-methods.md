@@ -1,6 +1,6 @@
 # Chip Distribution / CYQ Proxy Methods
 
-Use this reference when the user asks about 筹码分布、CYQ、成本峰、套牢盘、获利盘、主力锁仓、筹码集中、筹码发散, or when the agent needs chip lifecycle evidence.
+Use this reference when the user asks about chip distribution, CYQ-style cost curves, cost peaks, trapped holders, profitable chips, main-force lock-up evidence, chip concentration, chip dispersion, or when the agent needs chip lifecycle evidence.
 
 ## 1. Why Add This Layer
 
@@ -103,4 +103,3 @@ Do not replace trend confirmation with chip distribution. A low concentrated pea
 - Turnover-based replacement assumes traded float changes hands, which is only an approximation.
 - Vendor CYQ, broker cost curves, and this local proxy can differ materially.
 - Always label local output as "chip distribution proxy".
-

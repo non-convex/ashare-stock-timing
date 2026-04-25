@@ -134,17 +134,17 @@ def fetch_akshare_kline(symbol: str, start: str, end: str, adjust: str) -> dict:
         raise RuntimeError(f"No AKShare K-line data returned for {code}.")
 
     column_map = {
-        "date": "日期",
-        "open": "开盘",
-        "close": "收盘",
-        "high": "最高",
-        "low": "最低",
-        "volume": "成交量",
-        "amount": "成交额",
-        "amplitude_pct": "振幅",
-        "pct_change": "涨跌幅",
-        "change": "涨跌额",
-        "turnover": "换手率",
+        "date": "\u65e5\u671f",
+        "open": "\u5f00\u76d8",
+        "close": "\u6536\u76d8",
+        "high": "\u6700\u9ad8",
+        "low": "\u6700\u4f4e",
+        "volume": "\u6210\u4ea4\u91cf",
+        "amount": "\u6210\u4ea4\u989d",
+        "amplitude_pct": "\u632f\u5e45",
+        "pct_change": "\u6da8\u8dcc\u5e45",
+        "change": "\u6da8\u8dcc\u989d",
+        "turnover": "\u6362\u624b\u7387",
     }
     missing = [source for source in column_map.values() if source not in frame.columns]
     if missing:

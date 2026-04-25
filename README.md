@@ -1,6 +1,6 @@
 # A-Share Stock Timing Methodology
 
-[中文](./README.zh-CN.md)
+[Chinese README](./README.zh-CN.md)
 
 `ashare-stock-timing` is an agent-ready methodology package for AI agents that analyze Chinese A-share individual-stock technical timing: trend, buy points, sell points, fund-flow proxies, chip/cost distribution, and risk plans.
 

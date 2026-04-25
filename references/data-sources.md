@@ -38,8 +38,8 @@ Bundled scripts:
 |---|---|---|
 | `scripts/fetch_eastmoney_kline.py` | fetch daily K-line CSV; default `--source auto` tries BaoStock/AKShare if installed, then Eastmoney, Tencent, Yahoo Chart | initial OHLCV data package |
 | `scripts/score_ashare_timing.py` | compute MA/ATR/RSI/CMF/OBV-derived technical score from CSV | technical snapshot and consistency check |
-| `scripts/estimate_main_force.py` | compute tick-based large-order net flow or daily OHLCV main-force proxy | local 主力资金 reference |
-| `scripts/estimate_chip_distribution.py` | compute CYQ-style chip/cost distribution proxy from daily OHLCV | local 筹码分布 reference |
+| `scripts/estimate_main_force.py` | compute tick-based large-order net flow or daily OHLCV main-force proxy | local main-force fund-flow reference |
+| `scripts/estimate_chip_distribution.py` | compute CYQ-style chip/cost distribution proxy from daily OHLCV | local chip-distribution reference |
 
 Example:
 
@@ -62,7 +62,7 @@ AKShare `stock_zh_a_hist` commonly returns amount and turnover directly, but som
 
 If Tencent fallback is used, historical `amount` is estimated from unadjusted typical price times volume, and `turnover` is estimated from latest float shares when available. This is usually more useful than missing values but should still be labelled as estimated.
 
-If Yahoo fallback is used, `amount` and `turnover` may be blank. Lower confidence for amount/turnover-based conclusions and prefer web/vendor/exchange data when turnover or成交额 is essential.
+If Yahoo fallback is used, `amount` and `turnover` may be blank. Lower confidence for amount/turnover-based conclusions and prefer web/vendor/exchange data when turnover or trading amount is essential.
 
 Use `--secid` if automatic market inference is wrong:
 
@@ -88,17 +88,17 @@ Normalize CSV fields before using scripts or analysis:
 
 | Canonical field | Common aliases |
 |---|---|
-| date | 日期, trade_date, 时间 |
-| open | 开盘, open_price |
-| high | 最高, high_price |
-| low | 最低, low_price |
-| close | 收盘, close_price |
-| volume | 成交量, vol |
-| amount | 成交额, 成交金额, turnover_value |
-| turnover | 换手率, turnover_rate |
-| pct_change | 涨跌幅, change_pct |
-| index_close | benchmark_close, 指数收盘 |
-| sector_close | industry_close, 板块收盘 |
+| date | date, trade_date, time |
+| open | open, open_price |
+| high | high, high_price |
+| low | low, low_price |
+| close | close, close_price |
+| volume | volume, vol |
+| amount | amount, turnover_value, traded_value |
+| turnover | turnover, turnover_rate |
+| pct_change | pct_change, change_pct |
+| index_close | benchmark_close, index_close |
+| sector_close | industry_close, sector_close |
 
 Prefer amount over volume when comparing across stocks because A-share share counts and prices differ.
 
@@ -108,7 +108,7 @@ Prefer amount over volume when comparing across stocks because A-share share cou
 - Fund holdings and shareholder counts are lagged; use them for medium-term chip context, not same-day timing.
 - Northbound/Stock Connect intraday net-flow conventions have changed; avoid treating old real-time net-buying metrics as reliable current signals.
 - Vendor "large order" and "main-force flow" formulas differ; if used, cite vendor and combine with price/amount/turnover.
-- Local daily main-force proxy is not true 主力净流入; use `main-force-methods.md` and label conclusions as proxy evidence.
+- Local daily main-force proxy is not true main-force net inflow; use `main-force-methods.md` and label conclusions as proxy evidence.
 - Local chip distribution is a CYQ-style proxy, not a proprietary broker/vendor cost curve; use it for support/resistance and lifecycle evidence, not as fact.
 - Block trades can be bearish, neutral, or structural; interpret discount, lockup, buyer type, subsequent price support, and volume absorption together.
 - Margin financing is pro-cyclical; high-level financing growth is often a crowding risk.

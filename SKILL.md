@@ -1,6 +1,6 @@
 ---
 name: ashare-stock-timing
-description: Technical and trend timing methodology for A-share individual stocks. Use only when the user asks about A股/沪深/创业板/科创板/北交所个股的技术面、趋势、买点、卖点、波段、量价、资金动向、龙虎榜、两融、筹码、主力控盘、突破、回踩、止损、止盈 or AI-agent timing analysis. Do not trigger for fundamental analysis, financial statements, valuation, DCF, target price, intrinsic value, moat, earnings forecasts, or business-quality research unless the user explicitly asks to combine an existing fundamental view with technical timing.
+description: Technical and trend timing methodology for Chinese A-share individual stocks. Use only when the user asks about technical analysis, trend analysis, buy points, sell points, swing trading, price-volume behavior, fund-flow proxies, Dragon Tiger list, margin financing, chip distribution, main-force control proxies, breakouts, pullbacks, stop-loss levels, take-profit rules, or AI-agent timing analysis for Shanghai, Shenzhen, ChiNext, STAR Market, or Beijing Stock Exchange stocks. Do not trigger for fundamental analysis, financial statements, valuation, DCF, target price, intrinsic value, moat, earnings forecasts, or business-quality research unless the user explicitly asks to combine an existing fundamental view with technical timing.
 ---
 
 # A-Share Stock Timing
@@ -10,8 +10,8 @@ Use this skill to produce decision-grade, non-fundamental A-share individual-sto
 ## Core Rules
 
 - Treat price, volume, turnover, liquidity, and disclosed exchange data as primary evidence.
-- Do not present "主力意图" as fact. Translate it into observable proxies: volume-price behavior, turnover, OBV/CMF, financing balance, Dragon Tiger list, block trades, shareholder count, and disclosed holders.
-- Do not rely on vendor "主力净流入" alone; label it as an algorithmic estimate if used.
+- Do not present "main-force intention" as fact. Translate it into observable proxies: volume-price behavior, turnover, OBV/CMF, financing balance, Dragon Tiger list, block trades, shareholder count, and disclosed holders.
+- Do not rely on vendor "main-force net inflow" alone; label it as an algorithmic estimate if used.
 - Always account for A-share mechanics: T+1, price limits, board-specific volatility, disclosure lag, suspension risk, limit-up/limit-down execution risk, and announcement gaps.
 - If the task is fundamental or valuation-only, do not use this skill; switch to a fundamental/valuation workflow instead.
 - If the user asks for current/live analysis, verify latest trading rules, announcements, and data before concluding.
@@ -21,16 +21,16 @@ Use this skill to produce decision-grade, non-fundamental A-share individual-sto
 
 Use this skill for:
 
-- “某股票技术面怎么样 / 趋势如何 / 买点卖点在哪里 / 能不能突破 / 回踩怎么看”
-- “用资金动向、筹码、龙虎榜、两融、量价判断 A 股个股”
-- “设计 A 股个股技术分析 AI agent / 买卖点分析框架 / 波段交易计划”
-- “已有基本面结论，只需要判断技术入场、加仓、减仓、退出”
+- A-share technical-analysis questions, trend reviews, buy/sell point questions, breakout checks, and pullback interpretations.
+- Requests to judge an A-share stock using fund-flow proxies, chip distribution, Dragon Tiger list, margin financing, and price-volume behavior.
+- Requests to design an A-share technical-analysis AI agent, buy/sell timing framework, or swing-trading plan.
+- Requests where the fundamental view is already handled elsewhere and the user only needs technical entry, add, trim, or exit timing.
 
 Do not use this skill for:
 
-- “这家公司基本面怎么样 / 财报如何 / 估值贵不贵 / 目标价多少”
-- “DCF、PE/PB/PEG、盈利预测、行业空间、竞争壁垒、商业模式”
-- “是否值得长期投资” unless the user explicitly requests technical timing after a separate long-term thesis.
+- Company fundamentals, financial statements, valuation, target price, or fair-value questions.
+- DCF, PE/PB/PEG, earnings forecasts, industry TAM, competitive moat, or business-model research.
+- Long-term investment-worthiness questions unless the user explicitly requests technical timing after a separate long-term thesis.
 
 ## Workflow
 
@@ -49,8 +49,8 @@ Do not use this skill for:
 
 - Load `references/methodology.md` for the full framework, scoring rubric, buy/sell patterns, and risk rules.
 - Load `references/data-sources.md` when deciding whether to use a script or web search for a specific data need.
-- Load `references/main-force-methods.md` when analyzing 主力资金、主力净流入、大单、超大单、控盘、吸筹、派发, or when using local main-force proxy output.
-- Load `references/chip-distribution-methods.md` when analyzing 筹码分布、CYQ、成本峰、套牢盘、获利盘、主力锁仓、筹码集中 or 筹码发散.
+- Load `references/main-force-methods.md` when analyzing main-force funds, main-force net inflow, large orders, huge orders, control proxies, accumulation, distribution, or local main-force proxy output.
+- Load `references/chip-distribution-methods.md` when analyzing chip distribution, CYQ-style cost curves, cost peaks, trapped holders, profitable chips, lock-up evidence, chip concentration, or chip dispersion.
 - Load `references/report-template.md` when producing a standardized final report or JSON-like agent output.
 
 ## Data Scripts

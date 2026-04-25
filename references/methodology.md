@@ -31,7 +31,7 @@
 | Participant | Typical behavior | Useful evidence | Trap |
 |---|---|---|---|
 | Retail | Chases hot themes, reacts to headlines, sells into fear | sudden turnover, late-stage volume expansion, social heat | often appears strongest near distribution |
-| Hot money/游资 | short-term theme leadership, limit-up relay, fast exit | Dragon Tiger list, limit-up quality, opening auction, board breadth | list is delayed and seats can sell next day |
+| Hot-money traders | short-term theme leadership, limit-up relay, fast exit | Dragon Tiger list, limit-up quality, opening auction, board breadth | list is delayed and seats can sell next day |
 | Public funds | industry allocation, liquidity preference, ranking pressure | periodic fund reports, institutional holdings, large-cap trend | disclosure lag |
 | Private/quant | statistical trading, intraday liquidity, factor crowding | mean reversion, high turnover, abnormal intraday oscillation | difficult to infer from public data |
 | Margin funds | leveraged trend reinforcement | financing balance, financing purchases, price-financing combinations | high-level leverage can become forced selling |
@@ -145,7 +145,7 @@ Infer "control" only through observable chip behavior:
 - support tests at MA20/range top with lower volume;
 - shareholder count falls or top float holder concentration rises;
 - breakout closes near day high on 1.5-3.0x 20-day amount;
-- avoid illiquid "庄股" patterns: very low turnover, unnatural smoothness, no diverse liquidity, sudden gap risk.
+- avoid illiquid dealer-controlled or manipulated-stock patterns: very low turnover, unnatural smoothness, no diverse liquidity, sudden gap risk.
 
 ### Chip Distribution / CYQ Proxy Layer
 
@@ -178,10 +178,10 @@ If price rises sharply without a prior cost-distribution base and tick/DDY-like 
 
 ### Local Main-Force Reference
 
-When the user asks about 主力资金 or 主力控盘, use `scripts/estimate_main_force.py` if local daily/tick data is available:
+When the user asks about main-force funds or main-force control proxies, use `scripts/estimate_main_force.py` if local daily/tick data is available:
 
 - tick mode: use big+huge active net flow as a closer vendor-style main-force estimate;
-- daily mode: use only as a volume-price proxy, never as factual 主力净流入;
+- daily mode: use only as a volume-price proxy, never as factual main-force net inflow;
 - read tick-mode `ddx_proxy`, `ddy_absorption_proxy`, and `ddz_attack_proxy` as DDX/DDY/DDZ-style local references if available;
 - require price/volume confirmation before using the signal in a buy/sell plan;
 - downgrade confidence when the script reports missing amount, weak side classification, or high neutral tick amount.

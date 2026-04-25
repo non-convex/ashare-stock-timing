@@ -19,14 +19,14 @@ from typing import Iterable
 
 
 ALIASES = {
-    "date": ["date", "日期", "trade_date", "交易日期"],
-    "open": ["open", "开盘", "open_price"],
-    "high": ["high", "最高", "high_price"],
-    "low": ["low", "最低", "low_price"],
-    "close": ["close", "收盘", "close_price"],
-    "volume": ["volume", "成交量", "vol"],
-    "amount": ["amount", "成交额", "成交金额", "turnover_value"],
-    "turnover": ["turnover", "换手率", "turnover_rate"],
+    "date": ["date", "\u65e5\u671f", "trade_date", "\u4ea4\u6613\u65e5\u671f"],
+    "open": ["open", "\u5f00\u76d8", "open_price"],
+    "high": ["high", "\u6700\u9ad8", "high_price"],
+    "low": ["low", "\u6700\u4f4e", "low_price"],
+    "close": ["close", "\u6536\u76d8", "close_price"],
+    "volume": ["volume", "\u6210\u4ea4\u91cf", "vol"],
+    "amount": ["amount", "\u6210\u4ea4\u989d", "\u6210\u4ea4\u91d1\u989d", "turnover_value"],
+    "turnover": ["turnover", "\u6362\u624b\u7387", "turnover_rate"],
 }
 
 
@@ -344,4 +344,3 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

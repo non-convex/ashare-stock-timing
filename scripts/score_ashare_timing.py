@@ -3,8 +3,8 @@
 Compute a deterministic A-share technical timing snapshot from daily OHLCV CSV.
 
 Input columns are flexible. Recognized aliases include:
-date/日期, open/开盘, high/最高, low/最低, close/收盘, volume/成交量,
-amount/成交额, turnover/换手率.
+date, open, high, low, close, volume, amount, and turnover.
+The parser also recognizes common local-market CSV column aliases.
 
 This script intentionally scores only what can be inferred from the CSV. It does
 not replace market/sector/fund/chip due diligence.
@@ -23,14 +23,14 @@ from typing import Iterable
 
 
 ALIASES = {
-    "date": ["date", "日期", "trade_date", "时间"],
-    "open": ["open", "开盘", "open_price"],
-    "high": ["high", "最高", "high_price"],
-    "low": ["low", "最低", "low_price"],
-    "close": ["close", "收盘", "close_price"],
-    "volume": ["volume", "成交量", "vol"],
-    "amount": ["amount", "成交额", "成交金额", "turnover_value"],
-    "turnover": ["turnover", "换手率", "turnover_rate"],
+    "date": ["date", "\u65e5\u671f", "trade_date", "\u65f6\u95f4"],
+    "open": ["open", "\u5f00\u76d8", "open_price"],
+    "high": ["high", "\u6700\u9ad8", "high_price"],
+    "low": ["low", "\u6700\u4f4e", "low_price"],
+    "close": ["close", "\u6536\u76d8", "close_price"],
+    "volume": ["volume", "\u6210\u4ea4\u91cf", "vol"],
+    "amount": ["amount", "\u6210\u4ea4\u989d", "\u6210\u4ea4\u91d1\u989d", "turnover_value"],
+    "turnover": ["turnover", "\u6362\u624b\u7387", "turnover_rate"],
 }
 
 
@@ -194,9 +194,9 @@ def money(value: float | None) -> str:
     if value is None or math.isnan(value):
         return "n/a"
     if abs(value) >= 100_000_000:
-        return f"{value / 100_000_000:.2f}亿"
+        return f"{value / 100_000_000:.2f}e8"
     if abs(value) >= 10_000:
-        return f"{value / 10_000:.2f}万"
+        return f"{value / 10_000:.2f}e4"
     return f"{value:.2f}"
 
 
@@ -261,19 +261,19 @@ def score_snapshot(bars: list[Bar], entry: float | None, stop: float | None) -> 
     warnings = []
     if atr_pct is not None and atr_pct > 8:
         risk_score -= 3
-        warnings.append("ATR%较高，波动风险偏大")
+        warnings.append("ATR% is high; volatility risk is elevated")
     if amount20 is not None and amount20 < 100_000_000:
         risk_score -= 2
-        warnings.append("20日均成交额低于1亿元，注意流动性")
+        warnings.append("20-day average trading amount is below RMB 100 million; watch liquidity")
     if entry is not None and stop is not None:
         if stop >= entry:
-            warnings.append("止损价不应高于或等于买入价")
+            warnings.append("Stop price should not be above or equal to entry price")
             risk_score -= 4
         else:
             stop_pct = (entry - stop) / entry * 100
             if stop_pct > 8:
                 risk_score -= 3
-                warnings.append("止损距离超过8%，买点或仓位需要更保守")
+                warnings.append("Stop distance exceeds 8%; use a more conservative entry or position size")
             elif stop_pct <= 3:
                 risk_score += 1
     risk_score = max(0, min(risk_score, 10))
@@ -282,15 +282,15 @@ def score_snapshot(bars: list[Bar], entry: float | None, stop: float | None) -> 
     technical_max = 50
 
     if ma[60] and latest.close < ma[60] and ma_prior[60] and ma[60] < ma_prior[60]:
-        phase = "下降趋势或弱反弹"
+        phase = "downtrend_or_weak_rebound"
     elif ma[20] and ma[60] and latest.close > ma[20] > ma[60]:
-        phase = "上升趋势"
+        phase = "uptrend"
     elif latest.close >= high55:
-        phase = "突破/新高"
+        phase = "breakout_or_new_high"
     elif ma[20] and latest.close > ma[20]:
-        phase = "修复/筑底偏强"
+        phase = "repair_or_base_building_with_strength"
     else:
-        phase = "震荡或筑底"
+        phase = "range_or_base_building"
 
     rating = "watch"
     if technical_total >= 40:

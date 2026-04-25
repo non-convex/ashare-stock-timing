@@ -24,23 +24,23 @@ from typing import Iterable
 
 
 ALIASES = {
-    "date": ["date", "日期", "trade_date", "交易日期"],
-    "time": ["time", "时间", "trade_time", "成交时间"],
-    "open": ["open", "开盘", "open_price"],
-    "high": ["high", "最高", "high_price"],
-    "low": ["low", "最低", "low_price"],
-    "close": ["close", "收盘", "close_price"],
-    "price": ["price", "成交价", "现价", "trade_price"],
-    "volume": ["volume", "成交量", "vol", "成交量(股)", "成交量(手)"],
-    "amount": ["amount", "成交额", "成交金额", "turnover_value"],
-    "turnover": ["turnover", "换手率", "turnover_rate"],
-    "side": ["side", "方向", "买卖方向", "bs", "trade_side"],
-    "bid1": ["bid1", "买一价", "买一", "bid_price1"],
-    "ask1": ["ask1", "卖一价", "卖一", "ask_price1"],
+    "date": ["date", "\u65e5\u671f", "trade_date", "\u4ea4\u6613\u65e5\u671f"],
+    "time": ["time", "\u65f6\u95f4", "trade_time", "\u6210\u4ea4\u65f6\u95f4"],
+    "open": ["open", "\u5f00\u76d8", "open_price"],
+    "high": ["high", "\u6700\u9ad8", "high_price"],
+    "low": ["low", "\u6700\u4f4e", "low_price"],
+    "close": ["close", "\u6536\u76d8", "close_price"],
+    "price": ["price", "\u6210\u4ea4\u4ef7", "\u73b0\u4ef7", "trade_price"],
+    "volume": ["volume", "\u6210\u4ea4\u91cf", "vol", "\u6210\u4ea4\u91cf(\u80a1)", "\u6210\u4ea4\u91cf(\u624b)"],
+    "amount": ["amount", "\u6210\u4ea4\u989d", "\u6210\u4ea4\u91d1\u989d", "turnover_value"],
+    "turnover": ["turnover", "\u6362\u624b\u7387", "turnover_rate"],
+    "side": ["side", "\u65b9\u5411", "\u4e70\u5356\u65b9\u5411", "bs", "trade_side"],
+    "bid1": ["bid1", "\u4e70\u4e00\u4ef7", "\u4e70\u4e00", "bid_price1"],
+    "ask1": ["ask1", "\u5356\u4e00\u4ef7", "\u5356\u4e00", "ask_price1"],
 }
 
-BUY_VALUES = {"b", "buy", "bid", "主动买入", "买入", "买", "外盘", "1", "+"}
-SELL_VALUES = {"s", "sell", "ask", "主动卖出", "卖出", "卖", "内盘", "-1", "-"}
+BUY_VALUES = {"b", "buy", "bid", "\u4e3b\u52a8\u4e70\u5165", "\u4e70\u5165", "\u4e70", "\u5916\u76d8", "1", "+"}
+SELL_VALUES = {"s", "sell", "ask", "\u4e3b\u52a8\u5356\u51fa", "\u5356\u51fa", "\u5356", "\u5185\u76d8", "-1", "-"}
 
 
 @dataclass
@@ -187,9 +187,9 @@ def read_ticks(path: Path, volume_multiplier: float) -> list[TickTrade]:
         headers = reader.fieldnames or []
         columns = {key: find_column(headers, key) for key in ALIASES}
         if not columns["price"]:
-            raise SystemExit("Missing tick column: price/成交价")
+            raise SystemExit("Missing tick column: price or trade-price alias")
         if not columns["amount"] and not columns["volume"]:
-            raise SystemExit("Ticks need amount/成交额 or volume/成交量.")
+            raise SystemExit("Tick data needs amount or volume.")
 
         trades: list[TickTrade] = []
         previous_price: float | None = None
@@ -475,7 +475,7 @@ def summarize_daily_proxy(bars: list[DailyBar], window: int) -> dict:
         "Use tick/Level-2 data for vendor-style main-force net inflow.",
     ]
     if missing_amount:
-        warnings.append("Amount/成交额 missing for some/all rows; amount was approximated by close*volume where possible.")
+        warnings.append("Amount missing for some/all rows; amount was approximated by close*volume where possible.")
     if amount_ratio is None:
         warnings.append("Latest amount ratio unavailable; volume-expansion evidence is incomplete.")
 
@@ -513,7 +513,7 @@ def summarize_daily_proxy(bars: list[DailyBar], window: int) -> dict:
         "warnings": warnings,
         "limitations": [
             "Does not use account identity, order size, or true active buy/sell direction.",
-            "Good for AI reference as a volume-price fund proxy, not as factual 主力净流入.",
+            "Good for AI reference as a volume-price fund proxy, not as factual main-force net inflow.",
             "Confirm with price structure, sector context, margin data, Dragon Tiger list, and announcements.",
         ],
     }
