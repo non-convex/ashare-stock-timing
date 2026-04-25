@@ -1,155 +1,161 @@
-# A股个股技术择时 Skill
+# A-Share Stock Timing Methodology
 
-[English](./README.en.md)
+[中文](./README.zh-CN.md)
 
-`ashare-stock-timing` 是一个面向 AI Agent 的 Codex Skill，用于分析 A 股个股的技术面、趋势、买点、卖点、资金动向、筹码结构和风险计划。
+`ashare-stock-timing` is an agent-ready methodology package for AI agents that analyze Chinese A-share individual-stock technical timing: trend, buy points, sell points, fund-flow proxies, chip/cost distribution, and risk plans.
 
-它只解决 **技术择时** 问题，不做基本面、财报、估值、DCF、目标价或长期投资价值判断。
+It is strictly focused on **technical timing**. It does not perform fundamental analysis, financial-statement analysis, valuation, DCF, target-price modeling, or long-term business-quality research.
 
-## 适用场景
+## When To Use
 
-当用户询问以下问题时适合使用：
+Use this skill when the user asks about:
 
-- 某只 A 股个股的技术面、趋势、波段结构。
-- 买点、卖点、止损、止盈、加仓、减仓。
-- 量价关系、突破、回踩、箱体、主升浪、派发风险。
-- 主力资金、主力控盘、龙虎榜、两融、大宗交易、北向资金、筹码分布。
-- 已有基本面判断，只需要技术入场和退出计划。
+- Technical trend and swing structure of an A-share stock.
+- Buy points, sell points, stop-loss, take-profit, add-on, and trim logic.
+- Volume-price behavior, breakouts, pullbacks, boxes, markup phases, and distribution risk.
+- Main-force funds, Dragon Tiger list, margin financing, block trades, northbound flows, and chip/cost distribution.
+- Technical entry/exit timing after a separate fundamental view already exists.
 
-不适合用于：
+Do not use this skill for:
 
-- 公司基本面分析。
-- 财报质量、盈利预测、行业空间、商业模式、护城河。
-- PE/PB/PEG、DCF、目标价、内在价值。
-- 长期投资价值判断，除非用户明确要求在已有基本面结论上做技术择时。
+- Business fundamentals.
+- Financial statements, earnings forecasts, industry TAM, business model, or moat.
+- PE/PB/PEG, DCF, target price, or intrinsic value.
+- Long-term investment merit unless the user explicitly asks for technical timing on top of an existing thesis.
 
-## 核心方法论
+## Methodology
 
-Skill 使用多层证据链，而不是单一指标：
+The skill uses a layered evidence chain rather than any single indicator:
 
 ```text
-市场/板块过滤
-  -> 筹码生命周期
-  -> 个股趋势触发
-  -> 量价/主力资金确认
-  -> 风险与仓位计划
+market/sector filter
+  -> chip lifecycle
+  -> stock trend trigger
+  -> volume/main-force confirmation
+  -> risk and position plan
 ```
 
-主要模块：
+Main modules:
 
-| 模块 | 作用 |
+| Module | Purpose |
 |---|---|
-| 市场环境 | 判断大盘是否允许做多 |
-| 板块强度 | 判断资金是否在该方向 |
-| 个股趋势 | 判断趋势阶段、均线结构、新高/破位 |
-| 量价资金 | 判断突破、回踩、派发、成交额确认 |
-| 主力代理 | 用逐笔大单或日线代理评估资金行为 |
-| 筹码分布 | 用 CYQ-style 成本分布代理评估支撑、压力、锁仓和派发 |
-| 风险执行 | 处理 T+1、涨跌停、流动性、公告、止损距离 |
+| Market regime | Decide whether the broad market allows long exposure |
+| Sector strength | Decide whether money is moving into the stock's direction |
+| Stock trend | Identify phase, moving-average structure, highs, and breakdowns |
+| Volume/funds | Confirm breakouts, pullbacks, distribution, and turnover |
+| Main-force proxy | Estimate fund behavior from tick large orders or daily proxies |
+| Chip distribution | Estimate cost peaks, support/resistance, lock-up, and distribution risk |
+| Risk execution | Handle T+1, price limits, liquidity, announcements, and stop distance |
 
-## 数据与脚本
+## Data And Scripts
 
-所有脚本只依赖 Python 标准库。
+All scripts use only the Python standard library.
 
-### 1. 获取日线行情
+### 1. Fetch Daily K-Line Data
 
 ```powershell
 python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source auto --output 000001_daily.csv
 ```
 
-说明：
+Notes:
 
-- 默认 `--source auto`：先尝试 Eastmoney，失败后回退 Yahoo Chart。
-- Eastmoney 数据通常包含成交额和换手率。
-- Yahoo fallback 可能缺少 `amount` 和 `turnover`，此时成交额/换手率相关结论应降低置信度。
+- `--source auto` tries Eastmoney first and falls back to Yahoo Chart.
+- Eastmoney data usually includes amount and turnover.
+- Yahoo fallback may leave `amount` and `turnover` blank; lower confidence for amount/turnover-based conclusions in that case.
 
-### 2. 技术指标评分
+### 2. Technical Score Snapshot
 
 ```powershell
 python scripts/score_ashare_timing.py 000001_daily.csv --entry 10.50 --stop 9.85 --json
 ```
 
-输出包括：
+Outputs include:
 
 - MA5/10/20/60/120/250
-- ATR、RSI、CMF、OBV、MACD histogram
-- 20 日/55 日高低点
-- 成交额倍数
-- 趋势阶段
-- CSV 技术评分
+- ATR, RSI, CMF, OBV, MACD histogram
+- 20-day and 55-day high/low levels
+- amount expansion ratio
+- trend phase
+- CSV-only technical score
 
-### 3. 主力资金参考
+### 3. Main-Force Reference
 
-日线代理：
+Daily proxy:
 
 ```powershell
 python scripts/estimate_main_force.py 000001_daily.csv --mode daily --json
 ```
 
-逐笔成交模式：
+Tick mode:
 
 ```powershell
 python scripts/estimate_main_force.py ticks.csv --mode ticks --json
 ```
 
-逐笔模式支持字段：
+Useful tick columns:
 
 ```text
 date,time,price,volume,amount,side,bid1,ask1
 ```
 
-输出包括：
+Outputs include:
 
-- 大单/超大单主动买入、卖出、净额。
-- `ddx_amount_proxy`
-- `ddx_volume_proxy`
-- `ddy_absorption_proxy`
-- `ddz_attack_proxy`
+- big/huge active buy, sell, and net amount;
+- `ddx_amount_proxy`;
+- `ddx_volume_proxy`;
+- `ddy_absorption_proxy`;
+- `ddz_attack_proxy`.
 
-注意：日线模式只能计算“主力行为代理”，不能得到真实主力净流入。
+Daily mode is only a main-force behavior proxy. It cannot identify true account-level main-force net flow.
 
-### 4. 筹码分布 / CYQ 代理
+### 4. Chip / CYQ-Style Cost Distribution Proxy
 
 ```powershell
 python scripts/estimate_chip_distribution.py 000001_daily.csv --lookback 250 --json
 ```
 
-输出包括：
+Outputs include:
 
-- 成本分位点：`q05/q15/q50/q85/q95`
-- 成本峰：`peaks`
-- 支撑峰：`support_peaks_below_close`
-- 压力峰：`resistance_peaks_above_close`
-- 获利盘比例：`profit_ratio`
-- 套牢/上方压力比例：`overhead_ratio`
-- 筹码集中度：`concentration`
-- 生命周期状态：`lifecycle`
+- cost quantiles: `q05/q15/q50/q85/q95`;
+- cost peaks: `peaks`;
+- support peaks: `support_peaks_below_close`;
+- resistance peaks: `resistance_peaks_above_close`;
+- profit ratio: `profit_ratio`;
+- overhead ratio: `overhead_ratio`;
+- concentration state;
+- lifecycle state.
 
-注意：这是本地 CYQ-style 代理，不是券商或行情软件的专有筹码分布。
+This is a local CYQ-style proxy, not a proprietary broker/vendor chip distribution.
 
-## 安装到 Codex
+## Install / Use With AI Agents
 
-克隆到 Codex skills 目录：
-
-```powershell
-git clone https://github.com/non-convex/ashare-stock-timing.git C:/Users/Administrator/.codex/skills/ashare-stock-timing
-```
-
-或在 macOS/Linux：
+Clone the repository wherever your AI agent can read local tools, references, and scripts:
 
 ```bash
-git clone https://github.com/non-convex/ashare-stock-timing.git ~/.codex/skills/ashare-stock-timing
+git clone https://github.com/non-convex/ashare-stock-timing.git
 ```
 
-之后在 Codex 中询问 A 股技术面、趋势或买卖点时，skill 会按触发条件自动使用。
+If your agent supports skill-style local folders, clone it into that agent's skill directory. For example:
 
-## 典型使用方式
+```bash
+git clone https://github.com/non-convex/ashare-stock-timing.git <agent-skills-dir>/ashare-stock-timing
+```
 
-用户问题：
+On Windows:
 
-> 帮我分析一下 000001 的技术面，现在有没有买点？
+```powershell
+git clone https://github.com/non-convex/ashare-stock-timing.git C:/path/to/agent-skills/ashare-stock-timing
+```
 
-Agent 推荐流程：
+Agents can then load `SKILL.md`, call the scripts in `scripts/`, and selectively read the methodology files in `references/` when users ask about A-share technical trends or buy/sell timing.
+
+## Example Agent Flow
+
+User:
+
+> Analyze the technical trend and buy point for 000001.
+
+Recommended agent commands:
 
 ```powershell
 python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source auto --output 000001_daily.csv
@@ -158,23 +164,23 @@ python scripts/estimate_main_force.py 000001_daily.csv --mode daily --json
 python scripts/estimate_chip_distribution.py 000001_daily.csv --lookback 250 --json
 ```
 
-然后结合：
+Then combine the script output with:
 
-- 大盘与板块环境。
-- 最新公告、减持、解禁、停复牌、ST 风险。
-- 龙虎榜、两融、大宗交易、沪深股通等实时信息。
-- T+1、涨跌停、流动性和止损距离。
+- market and sector regime;
+- latest announcements, reduction plans, unlocks, suspension, or ST risk;
+- Dragon Tiger list, margin financing, block trades, and stock-connect data;
+- T+1, price limits, liquidity, and stop execution risk.
 
-最终输出：
+Final output should include:
 
-- 可行动 / 观察 / 回避。
-- 买点触发条件。
-- 加仓条件。
-- 止损和失效条件。
-- 减仓和卖出规则。
-- 风险和缺失数据。
+- actionable / watch / avoid rating;
+- buy trigger;
+- add-on trigger;
+- stop and invalidation;
+- trim and exit rules;
+- risk notes and missing data.
 
-## 文件结构
+## Repository Layout
 
 ```text
 .
@@ -194,15 +200,14 @@ python scripts/estimate_chip_distribution.py 000001_daily.csv --lookback 250 --j
     └── score_ashare_timing.py
 ```
 
-## 重要限制
+## Limitations
 
-- 本项目不是投资建议，也不保证收益。
-- 本项目不做基本面或估值判断。
-- “主力资金”“主力净流入”“筹码分布”均为模型或代理指标，不是交易所直接披露的真实账户数据。
-- 脚本计算结果必须结合价格结构、板块环境、公告风险、流动性和实际可执行性使用。
-- A 股存在 T+1、涨跌停、停牌、公告跳空、流动性断层等特殊风险。
+- This project is not investment advice and does not guarantee returns.
+- It does not perform fundamental or valuation analysis.
+- Main-force flow, main-force net inflow, and chip distribution are model-based proxies, not direct exchange-disclosed account data.
+- Script outputs must be combined with price structure, sector context, disclosures, liquidity, and real execution constraints.
+- A-shares have T+1, price limits, suspensions, announcement gaps, and liquidity-break risks.
 
 ## License
 
 MIT License. See [LICENSE](./LICENSE).
-
