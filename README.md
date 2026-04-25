@@ -49,7 +49,7 @@ Main modules:
 
 ## Data And Scripts
 
-All scripts use only the Python standard library.
+Core fallback sources use only the Python standard library. BaoStock and AKShare are supported as optional dependencies for fuller A-share historical fields.
 
 ### 1. Fetch Daily K-Line Data
 
@@ -59,10 +59,20 @@ python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 -
 
 Notes:
 
-- `--source auto` tries Eastmoney first, then Tencent, then Yahoo Chart.
+- `--source auto` tries BaoStock first if installed, then AKShare, Eastmoney, Tencent, and Yahoo Chart.
+- To enable optional sources, run `pip install -r requirements-optional.txt`.
+- BaoStock is usually the most stable optional free source in this project; it returns price, volume, amount, percent change, and turnover after a free login call.
+- AKShare usually provides price, volume, amount, amplitude, percent change, change, and turnover in one normalized response, but some AKShare endpoints may still depend on Eastmoney upstream availability.
 - Eastmoney data usually includes exact amount and turnover.
 - Tencent fallback fills price/volume, estimates historical amount from unadjusted typical price × volume, and estimates turnover from latest float shares when available.
 - Yahoo fallback may leave `amount` and `turnover` blank; lower confidence for amount/turnover-based conclusions in that case.
+
+Explicit optional sources:
+
+```powershell
+python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source baostock --output 000001_daily.csv
+python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source akshare --output 000001_daily.csv
+```
 
 ### 2. Technical Score Snapshot
 
@@ -199,6 +209,7 @@ Final output should include:
     ├── estimate_main_force.py
     ├── fetch_eastmoney_kline.py
     └── score_ashare_timing.py
+├── requirements-optional.txt
 ```
 
 ## Limitations

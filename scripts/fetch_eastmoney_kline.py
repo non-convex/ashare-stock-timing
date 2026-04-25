@@ -109,6 +109,159 @@ def fetch_eastmoney_kline(secid: str, start: str, end: str, adjust: str) -> dict
     return data
 
 
+def fetch_akshare_kline(symbol: str, start: str, end: str, adjust: str) -> dict:
+    try:
+        import akshare as ak  # type: ignore
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("AKShare is not installed. Install optional dependency with: pip install akshare") from exc
+
+    code = symbol.strip().split(".")[-1]
+    if not code.isdigit() or len(code) != 6:
+        raise SystemExit("AKShare source needs a 6-digit A-share code.")
+    adjust_value = {"none": "", "qfq": "qfq", "hfq": "hfq"}[adjust]
+    try:
+        frame = ak.stock_zh_a_hist(
+            symbol=code,
+            period="daily",
+            start_date=start,
+            end_date=end,
+            adjust=adjust_value,
+        )
+    except Exception as exc:  # noqa: BLE001 - preserve upstream message for diagnostics
+        raise RuntimeError(f"Failed to fetch AKShare K-line data: {exc}") from exc
+
+    if frame is None or frame.empty:
+        raise RuntimeError(f"No AKShare K-line data returned for {code}.")
+
+    column_map = {
+        "date": "日期",
+        "open": "开盘",
+        "close": "收盘",
+        "high": "最高",
+        "low": "最低",
+        "volume": "成交量",
+        "amount": "成交额",
+        "amplitude_pct": "振幅",
+        "pct_change": "涨跌幅",
+        "change": "涨跌额",
+        "turnover": "换手率",
+    }
+    missing = [source for source in column_map.values() if source not in frame.columns]
+    if missing:
+        raise RuntimeError(f"AKShare response missing expected columns: {', '.join(missing)}")
+
+    klines: list[str] = []
+    for _, row in frame.iterrows():
+        values = []
+        for field in FIELDS:
+            value = row[column_map[field]]
+            if field == "date":
+                values.append(str(value)[:10])
+            else:
+                values.append("" if value is None else str(value))
+        klines.append(",".join(values))
+    return {
+        "name": code,
+        "code": code,
+        "market": "akshare",
+        "klines": klines,
+        "notes": [
+            "AKShare stock_zh_a_hist is an optional dependency source.",
+            "Columns are normalized from AKShare Chinese field names.",
+        ],
+    }
+
+
+def baostock_code(symbol: str) -> str:
+    code = symbol.strip().split(".")[-1]
+    if not code.isdigit() or len(code) != 6:
+        raise SystemExit("BaoStock source needs a 6-digit A-share code.")
+    if code.startswith(("5", "6", "9")):
+        prefix = "sh"
+    else:
+        prefix = "sz"
+    return f"{prefix}.{code}"
+
+
+def fetch_baostock_kline(symbol: str, start: str, end: str, adjust: str) -> dict:
+    try:
+        import baostock as bs  # type: ignore
+    except ModuleNotFoundError as exc:
+        raise RuntimeError("BaoStock is not installed. Install optional dependency with: pip install baostock") from exc
+
+    code = baostock_code(symbol)
+    adjust_flag = {"none": "3", "qfq": "2", "hfq": "1"}[adjust]
+    start_date = yyyymmdd_to_dash(start)
+    end_date = yyyymmdd_to_dash(end)
+    fields = "date,code,open,high,low,close,volume,amount,pctChg,turn"
+
+    login = bs.login()
+    if getattr(login, "error_code", "0") != "0":
+        raise RuntimeError(f"BaoStock login failed: {getattr(login, 'error_msg', '')}")
+    try:
+        result = bs.query_history_k_data_plus(
+            code,
+            fields,
+            start_date=start_date,
+            end_date=end_date,
+            frequency="d",
+            adjustflag=adjust_flag,
+        )
+        if getattr(result, "error_code", "0") != "0":
+            raise RuntimeError(f"BaoStock query failed: {getattr(result, 'error_msg', '')}")
+
+        klines: list[str] = []
+        previous_close: float | None = None
+        while result.next():
+            item = dict(zip(result.fields, result.get_row_data()))
+            if not item.get("open") or not item.get("close"):
+                continue
+            open_ = float(item["open"])
+            high = float(item["high"])
+            low = float(item["low"])
+            close = float(item["close"])
+            volume = item.get("volume", "")
+            amount = item.get("amount", "")
+            pct_change = float(item["pctChg"]) if item.get("pctChg") else 0.0
+            change = close - previous_close if previous_close else 0.0
+            amplitude = ((high - low) / previous_close * 100) if previous_close else 0.0
+            turnover = item.get("turn", "")
+            klines.append(
+                ",".join(
+                    [
+                        item["date"],
+                        f"{open_:.4f}",
+                        f"{close:.4f}",
+                        f"{high:.4f}",
+                        f"{low:.4f}",
+                        volume,
+                        amount,
+                        f"{amplitude:.4f}",
+                        f"{pct_change:.4f}",
+                        f"{change:.4f}",
+                        turnover,
+                    ]
+                )
+            )
+            previous_close = close
+    finally:
+        bs.logout()
+
+    if not klines:
+        raise RuntimeError(f"No BaoStock K-line data returned for {code}.")
+    return {
+        "name": code,
+        "code": code,
+        "market": "baostock",
+        "klines": klines,
+        "notes": [
+            "BaoStock is an optional dependency source.",
+            "Adjustment flags: none=3, qfq=2, hfq=1.",
+            "Amount and turnover are returned by BaoStock when available.",
+        ],
+    }
+
+
 def yahoo_symbol(symbol: str) -> str:
     code = symbol.strip().split(".")[-1]
     if not code.isdigit() or len(code) != 6:
@@ -379,13 +532,18 @@ def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
 
 
 def main(argv: Iterable[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Fetch A-share daily K-line CSV from Eastmoney.")
+    parser = argparse.ArgumentParser(description="Fetch A-share daily K-line CSV from free public data sources.")
     parser.add_argument("symbol", help="6-digit code, e.g. 000001, 600519, 300750. Ignored if --secid is set.")
     parser.add_argument("--secid", help="Eastmoney secid, e.g. 0.000001 or 1.600519.")
     parser.add_argument("--start", default="20180101", help="Start date YYYYMMDD.")
     parser.add_argument("--end", default=date.today().strftime("%Y%m%d"), help="End date YYYYMMDD.")
     parser.add_argument("--adjust", default="qfq", choices=["none", "qfq", "hfq"], help="Price adjustment mode.")
-    parser.add_argument("--source", default="auto", choices=["auto", "eastmoney", "tencent", "yahoo"], help="Data source.")
+    parser.add_argument(
+        "--source",
+        default="auto",
+        choices=["auto", "baostock", "akshare", "eastmoney", "tencent", "yahoo"],
+        help="Data source. auto tries BaoStock/AKShare if installed, then Eastmoney, Tencent, Yahoo.",
+    )
     parser.add_argument("--output", type=Path, help="Output CSV path. Defaults to <symbol>_daily.csv.")
     parser.add_argument("--json", action="store_true", help="Print metadata JSON after writing CSV.")
     args = parser.parse_args(argv)
@@ -394,7 +552,21 @@ def main(argv: Iterable[str] | None = None) -> int:
     output = args.output or Path(f"{args.symbol}_daily.csv")
     data = None
     errors: list[str] = []
-    if args.source in {"auto", "eastmoney"}:
+    if args.source in {"auto", "baostock"}:
+        try:
+            data = fetch_baostock_kline(args.symbol, args.start, args.end, args.adjust)
+        except RuntimeError as exc:
+            errors.append(str(exc))
+            if args.source == "baostock":
+                raise SystemExit(str(exc))
+    if data is None and args.source in {"auto", "akshare"}:
+        try:
+            data = fetch_akshare_kline(args.symbol, args.start, args.end, args.adjust)
+        except RuntimeError as exc:
+            errors.append(str(exc))
+            if args.source == "akshare":
+                raise SystemExit(str(exc))
+    if data is None and args.source in {"auto", "eastmoney"}:
         try:
             data = fetch_eastmoney_kline(secid, args.start, args.end, args.adjust)
         except RuntimeError as exc:

@@ -36,7 +36,7 @@ Bundled scripts:
 
 | Script | Purpose | Typical use |
 |---|---|---|
-| `scripts/fetch_eastmoney_kline.py` | fetch daily K-line CSV; default `--source auto` tries Eastmoney, then Tencent, then Yahoo Chart fallback | initial OHLCV data package |
+| `scripts/fetch_eastmoney_kline.py` | fetch daily K-line CSV; default `--source auto` tries BaoStock/AKShare if installed, then Eastmoney, Tencent, Yahoo Chart | initial OHLCV data package |
 | `scripts/score_ashare_timing.py` | compute MA/ATR/RSI/CMF/OBV-derived technical score from CSV | technical snapshot and consistency check |
 | `scripts/estimate_main_force.py` | compute tick-based large-order net flow or daily OHLCV main-force proxy | local 主力资金 reference |
 | `scripts/estimate_chip_distribution.py` | compute CYQ-style chip/cost distribution proxy from daily OHLCV | local 筹码分布 reference |
@@ -53,6 +53,12 @@ python C:/Users/Administrator/.codex/skills/ashare-stock-timing/scripts/estimate
 The fetch script writes canonical English columns:
 
 `date, open, close, high, low, volume, amount, amplitude_pct, pct_change, change, turnover`
+
+If optional dependencies are installed, `--source auto` tries BaoStock first, then AKShare. Install with `pip install -r requirements-optional.txt`.
+
+BaoStock is currently the preferred optional free source because its query returns amount and turnover and is less coupled to the Eastmoney endpoint in this environment. Use `--source baostock` explicitly for it.
+
+AKShare `stock_zh_a_hist` commonly returns amount and turnover directly, but some AKShare upstream paths may still depend on Eastmoney availability. Use `--source akshare` explicitly when desired.
 
 If Tencent fallback is used, historical `amount` is estimated from unadjusted typical price times volume, and `turnover` is estimated from latest float shares when available. This is usually more useful than missing values but should still be labelled as estimated.
 

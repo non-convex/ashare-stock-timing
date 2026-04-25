@@ -61,6 +61,14 @@ Fetch daily K-line data:
 python C:/Users/Administrator/.codex/skills/ashare-stock-timing/scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --output 000001_daily.csv
 ```
 
+For fuller historical fields, optionally install BaoStock/AKShare in the agent environment and use `--source baostock`, `--source akshare`, or the default `--source auto`:
+
+```powershell
+pip install -r C:/Users/Administrator/.codex/skills/ashare-stock-timing/requirements-optional.txt
+python C:/Users/Administrator/.codex/skills/ashare-stock-timing/scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source baostock --output 000001_daily.csv
+python C:/Users/Administrator/.codex/skills/ashare-stock-timing/scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source akshare --output 000001_daily.csv
+```
+
 Score a CSV of daily OHLCV data:
 
 ```powershell

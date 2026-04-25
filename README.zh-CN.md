@@ -49,7 +49,7 @@ Skill 使用多层证据链，而不是单一指标：
 
 ## 数据与脚本
 
-所有脚本只依赖 Python 标准库。
+核心 fallback 数据源只依赖 Python 标准库。若需要更完整的 A 股历史行情字段，可选择安装 BaoStock 和 AKShare 作为可选依赖。
 
 ### 1. 获取日线行情
 
@@ -59,10 +59,20 @@ python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 -
 
 说明：
 
-- 默认 `--source auto`：先尝试 Eastmoney，再尝试 Tencent，最后回退 Yahoo Chart。
+- 默认 `--source auto`：如果已安装 BaoStock，会先尝试 BaoStock，然后尝试 AKShare、Eastmoney、Tencent，最后回退 Yahoo Chart。
+- 启用可选源：`pip install -r requirements-optional.txt`。
+- BaoStock 是本项目当前更稳定的可选免费源，免费登录后通常返回价格、成交量、成交额、涨跌幅和换手率。
+- AKShare 通常能在同一响应中提供价格、成交量、成交额、振幅、涨跌幅、涨跌额和换手率，但部分 AKShare 接口可能仍受 Eastmoney 上游可用性影响。
 - Eastmoney 数据通常包含较完整的成交额和换手率。
 - Tencent fallback 会补齐价格/成交量，并用未复权典型价 × 成交量估算历史成交额；如能取得最新流通股本，则估算换手率。
 - Yahoo fallback 可能缺少 `amount` 和 `turnover`，此时成交额/换手率相关结论应降低置信度。
+
+显式使用可选源：
+
+```powershell
+python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source baostock --output 000001_daily.csv
+python scripts/fetch_eastmoney_kline.py 000001 --start 20240101 --end 20260425 --adjust qfq --source akshare --output 000001_daily.csv
+```
 
 ### 2. 技术指标评分
 
@@ -199,6 +209,7 @@ python scripts/estimate_chip_distribution.py 000001_daily.csv --lookback 250 --j
     ├── estimate_main_force.py
     ├── fetch_eastmoney_kline.py
     └── score_ashare_timing.py
+├── requirements-optional.txt
 ```
 
 ## 重要限制
